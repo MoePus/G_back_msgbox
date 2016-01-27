@@ -32,11 +32,17 @@ struct GBMSGBOXPARAMS
 	uint32_t unk_54;
 	uint32_t unk_58;
 	uint32_t unk_5C;
-	std::function<void(::HWND hwnd)> GBBOXCallback;
+	std::function<void(::HWND hwnd,void* data)> GBBOXCallback;
+	void* userData;
 };
 namespace GBbox
 {
 	uint32_t _hookFunAddr;
+}
+
+class GBMSGBOX
+{
+public:
 	enum mirror_option
 	{
 		GB_NO_MIRROR = 0x0,
@@ -44,15 +50,10 @@ namespace GBbox
 		GB_TEXT_MIRROR = 0x1,
 		GB_TEXTANDCAPTION_MIRROR = 0x11
 	};
-}
-
-class GBMSGBOX
-{
-public:
 	template<typename funcType>
-	void GBBOXASYNC(std::wstring text, std::wstring caption, uint32_t style, std::vector<std::wstring> button, GBbox::mirror_option mirror = GBbox::GB_NO_MIRROR, uint32_t timeOut = -1, funcType CallBck = NULL);
+	void GBBOXASYNC(std::wstring text, std::wstring caption, uint32_t style, std::vector<std::wstring> button, mirror_option mirror = GB_NO_MIRROR, uint32_t timeOut = -1, funcType CallBck = NULL, void* data = NULL);
 	template<typename funcType>
-	void GBBOX(std::wstring text, std::wstring caption, uint32_t style, std::vector<std::wstring> button, GBbox::mirror_option mirror = GBbox::GB_NO_MIRROR, uint32_t timeOut = -1, funcType CallBck = NULL);
+	void GBBOX(std::wstring text, std::wstring caption, uint32_t style, std::vector<std::wstring> button, mirror_option mirror = GB_NO_MIRROR, uint32_t timeOut = -1, funcType CallBck = NULL, void* data = NULL);
 	GBMSGBOX::GBMSGBOX()
 	{
 		HMODULE user32 = LoadLibraryA("user32.dll");
@@ -78,7 +79,7 @@ public:
 			}
 		}
 	}
-	void demo()
+	/*void demo()
 	{
 
 		GBMSGBOXPARAMS params;
@@ -101,7 +102,7 @@ public:
 		params.GBBOXCallback = demoCallBck;
 
 		callSoftModalMessageBox(&params);
-	}
+	}*/
 	
 private:
 
@@ -113,7 +114,7 @@ private:
 		{
 			if (a4->GBBOXCallback)
 			{
-				std::thread th(a4->GBBOXCallback, hWnd);
+				std::thread th(a4->GBBOXCallback, hWnd, a4->userData);
 				th.detach();
 			}
 		}
@@ -171,10 +172,10 @@ private:
 	}
 
 
-	static void demoCallBck(HWND hWnd)
+	/*static void demoCallBck(HWND hWnd)
 	{
 		std::cout << (int)hWnd;
-	}
+	}*/
 	__forceinline int callSoftModalMessageBox(GBMSGBOXPARAMS* params)
 	{
 		void* func_proc = SoftModalMessageBox;
@@ -194,15 +195,16 @@ private:
 	FunctionType_SoftModalMessageBox SoftModalMessageBox;
 };
 template<typename funcType>
-inline void GBMSGBOX::GBBOXASYNC(std::wstring text, std::wstring caption, uint32_t style, std::vector<std::wstring> button, GBbox::mirror_option mirror, uint32_t timeOut, funcType CallBck)
+inline void GBMSGBOX::GBBOXASYNC(std::wstring text, std::wstring caption, uint32_t style, std::vector<std::wstring> button, mirror_option mirror, uint32_t timeOut, funcType CallBck, void* data)
 {
-	std::thread th(&GBMSGBOX::GBBOX<funcType>, this, text, caption, style, button, mirror, timeOut, CallBck);
+	std::thread th(&GBMSGBOX::GBBOX<funcType>, this, text, caption, style, button, mirror, timeOut, CallBck, data);
 	th.detach();
 }
 
 template<typename funcType>
-void GBMSGBOX::GBBOX(std::wstring text, std::wstring caption, uint32_t style, std::vector<std::wstring> button, GBbox::mirror_option mirror, uint32_t timeOut, funcType CallBck)
+void GBMSGBOX::GBBOX(std::wstring text, std::wstring caption, uint32_t style, std::vector<std::wstring> button, mirror_option mirror, uint32_t timeOut, funcType CallBck, void* data)
 {
+
 	if (mirror)
 	{
 		style = (15*mirror) << 16;
@@ -214,7 +216,11 @@ void GBMSGBOX::GBBOX(std::wstring text, std::wstring caption, uint32_t style, st
 	params.lpszText = text.c_str();
 	params.dwTimeOut = timeOut;
 	params.dwStyle = style;
-	params.GBBOXCallback = CallBck;
+	if (data)
+	{
+		params.GBBOXCallback = CallBck;
+		params.userData = data;
+	}
 
 	uint32_t size = button.size();
 	params.buttonNum = size;
