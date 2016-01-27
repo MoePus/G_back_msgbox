@@ -37,15 +37,22 @@ struct GBMSGBOXPARAMS
 namespace GBbox
 {
 	uint32_t _hookFunAddr;
+	enum mirror_option
+	{
+		GB_NO_MIRROR = 0x0,
+		GB_CAPTION_MIRROR = 0x10,
+		GB_TEXT_MIRROR = 0x1,
+		GB_TEXTANDCAPTION_MIRROR = 0x11
+	};
 }
 
 class GBMSGBOX
 {
 public:
 	template<typename funcType>
-	void GBBOXASYNC(std::wstring text, std::wstring caption, uint32_t style, std::vector<std::wstring> button, bool mirror = 0, uint32_t timeOut = -1, funcType CallBck = NULL);
+	void GBBOXASYNC(std::wstring text, std::wstring caption, uint32_t style, std::vector<std::wstring> button, GBbox::mirror_option mirror = GBbox::GB_NO_MIRROR, uint32_t timeOut = -1, funcType CallBck = NULL);
 	template<typename funcType>
-	void GBBOX(std::wstring text, std::wstring caption, uint32_t style, std::vector<std::wstring> button, bool mirror = 0, uint32_t timeOut = -1, funcType CallBck = NULL);
+	void GBBOX(std::wstring text, std::wstring caption, uint32_t style, std::vector<std::wstring> button, GBbox::mirror_option mirror = GBbox::GB_NO_MIRROR, uint32_t timeOut = -1, funcType CallBck = NULL);
 	GBMSGBOX::GBMSGBOX()
 	{
 		HMODULE user32 = LoadLibraryA("user32.dll");
@@ -187,18 +194,18 @@ private:
 	FunctionType_SoftModalMessageBox SoftModalMessageBox;
 };
 template<typename funcType>
-inline void GBMSGBOX::GBBOXASYNC(std::wstring text, std::wstring caption, uint32_t style, std::vector<std::wstring> button, bool mirror, uint32_t timeOut, funcType CallBck)
+inline void GBMSGBOX::GBBOXASYNC(std::wstring text, std::wstring caption, uint32_t style, std::vector<std::wstring> button, GBbox::mirror_option mirror, uint32_t timeOut, funcType CallBck)
 {
 	std::thread th(&GBMSGBOX::GBBOX<funcType>, this, text, caption, style, button, mirror, timeOut, CallBck);
 	th.detach();
 }
 
 template<typename funcType>
-void GBMSGBOX::GBBOX(std::wstring text, std::wstring caption, uint32_t style, std::vector<std::wstring> button, bool mirror, uint32_t timeOut, funcType CallBck)
+void GBMSGBOX::GBBOX(std::wstring text, std::wstring caption, uint32_t style, std::vector<std::wstring> button, GBbox::mirror_option mirror, uint32_t timeOut, funcType CallBck)
 {
 	if (mirror)
 	{
-		style |= (1 << 31);
+		style = (15*mirror) << 16;
 	}
 	GBMSGBOXPARAMS params;
 	memset(&params, 0, sizeof(GBMSGBOXPARAMS));
