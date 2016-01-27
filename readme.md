@@ -23,5 +23,8 @@ int main()
 * GB_TEXT_MIRROR
 * GB_TEXTANDCAPTION_MIRROR
 
+##License
+MIT License
+
 Just Try It.
 
